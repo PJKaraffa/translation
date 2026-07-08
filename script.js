@@ -317,6 +317,21 @@ function actionButtons(row) {
 }
 
 function adminActions(row) {
+  const isPending = row.status === "Pending Approval";
+
+  if (!isPending) {
+    return `
+      <button onclick="editRequestActions(${row.id})">Edit</button>
+      <div id="editBox-${row.id}" class="action-box hidden">
+        ${adminEditBox(row)}
+      </div>
+    `;
+  }
+
+  return adminEditBox(row);
+}
+
+function adminEditBox(row) {
   const translatorOptions = translators.map(t => {
     const selected = row.translator_id === t.id ? "selected" : "";
     return `<option value="${t.id}" ${selected}>${t.full_name || t.email}</option>`;
@@ -337,6 +352,10 @@ function adminActions(row) {
       <button class="complete" onclick="completeRequest(${row.id})">Complete</button>
     </div>
   `;
+}
+
+function editRequestActions(id) {
+  document.getElementById(`editBox-${id}`).classList.toggle("hidden");
 }
 
 function translatorActions(row) {
