@@ -6,7 +6,7 @@ document.addEventListener("DOMContentLoaded", checkUser);
 
 async function checkUser() {
   const { data } = await supabaseClient.auth.getUser();
-
+  console.log(data.user);
   if (!data.user) {
     showLogin();
     return;
