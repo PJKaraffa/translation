@@ -19,69 +19,108 @@
 
 <div id="appPage" class="hidden">
 
-  <div class="topbar">
-    <div>
-      <h1>Translation Request System</h1>
-      <p id="userRole"></p>
-    </div>
-    <button onclick="logout()">Logout</button>
-  </div>
+  <div class="layout">
 
-  <div id="requestFormCard" class="card">
-    <h2>New Translation Request</h2>
+    <aside class="sidebar">
+      <h2>Translation</h2>
+      <button onclick="showSection('dashboard')">Dashboard</button>
+      <button onclick="showSection('newRequest')">New Request</button>
+      <button onclick="showSection('requests')">Requests</button>
+      <button onclick="logout()">Logout</button>
+    </aside>
 
-    <div class="grid">
-      <input id="lastName" placeholder="Last Name">
-      <input id="firstName" placeholder="First Name">
-      <input id="email" type="email" placeholder="Email">
-      <input id="phone" placeholder="Phone">
+    <main class="main">
 
-      <label>
-        Service Date
-        <input id="serviceDate" type="date">
-      </label>
+      <div class="topbar">
+        <h1>Translation Request System</h1>
+        <p id="userRole"></p>
+      </div>
 
-      <label>
-        Need By Date
-        <input id="needByDate" type="date">
-      </label>
+      <section id="dashboard" class="section">
+        <div class="stats">
+          <div class="stat-card">
+            <h3>Pending Approval</h3>
+            <p id="pendingCount">0</p>
+          </div>
+          <div class="stat-card">
+            <h3>Waiting Translator</h3>
+            <p id="waitingCount">0</p>
+          </div>
+          <div class="stat-card">
+            <h3>Assigned</h3>
+            <p id="assignedCount">0</p>
+          </div>
+          <div class="stat-card">
+            <h3>Completed</h3>
+            <p id="completedCount">0</p>
+          </div>
+        </div>
+      </section>
 
-      <input id="language" placeholder="Language">
-      <input id="school" placeholder="School">
+      <section id="newRequest" class="section hidden">
+        <div class="card">
+          <h2>New Translation Request</h2>
 
-      <select id="sped">
-        <option value="">SPED Y or N</option>
-        <option value="Y">Y</option>
-        <option value="N">N</option>
-      </select>
-    </div>
+          <div class="grid">
+            <label>
+              Service Date
+              <input id="serviceDate" type="date">
+            </label>
 
-    <textarea id="requestNotes" placeholder="Request Notes"></textarea>
+            <input id="lasid" placeholder="LASID">
+            <input id="lastName" placeholder="Last Name">
+            <input id="firstName" placeholder="First Name">
 
-    <button onclick="saveRequest()">Submit Request</button>
-    <p id="saveMessage"></p>
-  </div>
+            <select id="schoolSelect">
+              <option value="">Choose School</option>
+            </select>
 
-  <div class="card">
-    <h2>Requests</h2>
+            <select id="languageSelect">
+              <option value="">Choose Language</option>
+            </select>
 
-    <table>
-      <thead>
-        <tr>
-          <th>ID</th>
-          <th>Status</th>
-          <th>Need By</th>
-          <th>Service Date</th>
-          <th>Student</th>
-          <th>Language</th>
-          <th>School</th>
-          <th>SPED</th>
-          <th>Translator</th>
-          <th>Actions</th>
-        </tr>
-      </thead>
-      <tbody id="requestTable"></tbody>
-    </table>
+            <select id="sped">
+              <option value="">SPED Y or N</option>
+              <option value="Y">Y</option>
+              <option value="N">N</option>
+            </select>
+          </div>
+
+          <textarea id="requestNotes" placeholder="Request Notes"></textarea>
+
+          <button onclick="saveRequest()">Submit Request</button>
+          <p id="saveMessage"></p>
+        </div>
+      </section>
+
+      <section id="requests" class="section hidden">
+        <div class="card">
+          <h2>Requests</h2>
+
+          <input id="searchBox" placeholder="Search requests..." oninput="renderRequests()">
+
+          <table>
+            <thead>
+              <tr>
+                <th>ID</th>
+                <th>Status</th>
+                <th>Service Date</th>
+                <th>LASID</th>
+                <th>Student</th>
+                <th>School</th>
+                <th>Language</th>
+                <th>SPED</th>
+                <th>Translator</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody id="requestTable"></tbody>
+          </table>
+        </div>
+      </section>
+
+    </main>
+
   </div>
 
 </div>
