@@ -1,6 +1,7 @@
 let currentUser = null;
 let currentProfile = null;
 let translators = [];
+let allRequests = [];
 
 document.addEventListener("DOMContentLoaded", checkUser);
 
@@ -15,10 +16,11 @@ async function checkUser() {
   currentUser = data.user;
 
   await loadProfile();
+  await loadDropdowns();
   await loadTranslators();
 
   showApp();
-  loadRequests();
+  await loadRequests();
 }
 
 function showLogin() {
@@ -31,13 +33,19 @@ function showApp() {
   document.getElementById("appPage").classList.remove("hidden");
 
   document.getElementById("userRole").textContent =
-    `Logged in as: ${currentProfile.full_name || currentProfile.email} | Role: ${currentProfile.role}`;
+    `${currentProfile.full_name || currentProfile.email} | ${currentProfile.role}`;
 
   if (currentProfile.role === "translator" || currentProfile.role === "viewer") {
-    document.getElementById("requestFormCard").classList.add("hidden");
-  } else {
-    document.getElementById("requestFormCard").classList.remove("hidden");
+    document.querySelector("button[onclick=\"showSection('newRequest')\"]").classList.add("hidden");
   }
+}
+
+function showSection(sectionId) {
+  document.querySelectorAll(".section").forEach(section => {
+    section.classList.add("hidden");
+  });
+
+  document.getElementById(sectionId).classList.remove("hidden");
 }
 
 async function login() {
@@ -80,12 +88,40 @@ async function loadProfile() {
   currentProfile = data;
 }
 
+async function loadDropdowns() {
+  const { data: schools } = await supabaseClient
+    .from("schools")
+    .select("*")
+    .eq("active", true)
+    .order("school_name");
+
+  const { data: languages } = await supabaseClient
+    .from("languages")
+    .select("*")
+    .eq("active", true)
+    .order("language_name");
+
+  const schoolSelect = document.getElementById("schoolSelect");
+  const languageSelect = document.getElementById("languageSelect");
+
+  schoolSelect.innerHTML = `<option value="">Choose School</option>`;
+  languageSelect.innerHTML = `<option value="">Choose Language</option>`;
+
+  schools.forEach(s => {
+    schoolSelect.innerHTML += `<option value="${s.id}">${s.school_name}</option>`;
+  });
+
+  languages.forEach(l => {
+    languageSelect.innerHTML += `<option value="${l.id}">${l.language_name}</option>`;
+  });
+}
+
 async function loadTranslators() {
   const { data, error } = await supabaseClient
     .from("profiles")
     .select("*")
     .eq("role", "translator")
-    .order("full_name", { ascending: true });
+    .order("full_name");
 
   if (error) {
     console.log(error);
@@ -98,18 +134,22 @@ async function loadTranslators() {
 async function saveRequest() {
   const newRequest = {
     requestor_id: currentUser.id,
+    service_date: document.getElementById("serviceDate").value || null,
+    lasid: document.getElementById("lasid").value.trim(),
     last_name: document.getElementById("lastName").value.trim(),
     first_name: document.getElementById("firstName").value.trim(),
-    email: document.getElementById("email").value.trim(),
-    phone: document.getElementById("phone").value.trim(),
-    service_date: document.getElementById("serviceDate").value || null,
-    need_by_date: document.getElementById("needByDate").value || null,
-    language: document.getElementById("language").value.trim(),
-    school: document.getElementById("school").value.trim(),
+    school_id: document.getElementById("schoolSelect").value || null,
+    language_id: document.getElementById("languageSelect").value || null,
     sped: document.getElementById("sped").value,
     request_notes: document.getElementById("requestNotes").value.trim(),
     status: "Pending Approval"
   };
+
+  if (!newRequest.service_date || !newRequest.lasid || !newRequest.last_name || !newRequest.first_name) {
+    document.getElementById("saveMessage").textContent =
+      "Service Date, LASID, Last Name, and First Name are required.";
+    return;
+  }
 
   const { error } = await supabaseClient
     .from("translation_requests")
@@ -120,15 +160,16 @@ async function saveRequest() {
     return;
   }
 
-  document.getElementById("saveMessage").textContent = "Request submitted for approval.";
+  document.getElementById("saveMessage").textContent = "Request submitted.";
 
   clearForm();
-  loadRequests();
+  await loadRequests();
+  showSection("requests");
 }
 
 function clearForm() {
   document
-    .querySelectorAll("#requestFormCard input, #requestFormCard textarea, #requestFormCard select")
+    .querySelectorAll("#newRequest input, #newRequest textarea, #newRequest select")
     .forEach(el => el.value = "");
 }
 
@@ -137,6 +178,8 @@ async function loadRequests() {
     .from("translation_requests")
     .select(`
       *,
+      school:school_id(school_name),
+      language:language_id(language_name),
       translator:translator_id(full_name,email)
     `)
     .order("created_at", { ascending: false });
@@ -146,10 +189,48 @@ async function loadRequests() {
     return;
   }
 
+  allRequests = data || [];
+  updateDashboard();
+  renderRequests();
+}
+
+function updateDashboard() {
+  document.getElementById("pendingCount").textContent =
+    allRequests.filter(r => r.status === "Pending Approval").length;
+
+  document.getElementById("waitingCount").textContent =
+    allRequests.filter(r => r.status === "Waiting for Translator").length;
+
+  document.getElementById("assignedCount").textContent =
+    allRequests.filter(r => r.status === "Assigned").length;
+
+  document.getElementById("completedCount").textContent =
+    allRequests.filter(r => r.status === "Completed").length;
+}
+
+function renderRequests() {
+  const search = document.getElementById("searchBox")?.value.toLowerCase() || "";
+
+  const filtered = allRequests.filter(r => {
+    const text = `
+      ${r.id}
+      ${r.status}
+      ${r.service_date}
+      ${r.lasid}
+      ${r.last_name}
+      ${r.first_name}
+      ${r.school?.school_name}
+      ${r.language?.language_name}
+      ${r.sped}
+    `.toLowerCase();
+
+    return text.includes(search);
+  });
+
   const tbody = document.getElementById("requestTable");
   tbody.innerHTML = "";
 
-  data.forEach(row => {
+  filtered.forEach(row => {
     tbody.innerHTML += buildRow(row);
   });
 }
@@ -163,11 +244,11 @@ function buildRow(row) {
     <tr>
       <td>${row.id}</td>
       <td>${statusBadge(row.status)}</td>
-      <td>${row.need_by_date || ""}</td>
       <td>${row.service_date || ""}</td>
+      <td>${row.lasid || ""}</td>
       <td>${row.last_name || ""}, ${row.first_name || ""}</td>
-      <td>${row.language || ""}</td>
-      <td>${row.school || ""}</td>
+      <td>${row.school?.school_name || ""}</td>
+      <td>${row.language?.language_name || ""}</td>
       <td>${row.sped || ""}</td>
       <td>${translatorName}</td>
       <td>${actionButtons(row)}</td>
@@ -265,7 +346,7 @@ async function approveWaiting(id) {
     return;
   }
 
-  loadRequests();
+  await loadRequests();
 }
 
 async function assignTranslator(id) {
@@ -292,7 +373,7 @@ async function assignTranslator(id) {
     return;
   }
 
-  loadRequests();
+  await loadRequests();
 }
 
 async function rejectRequest(id) {
@@ -311,7 +392,7 @@ async function rejectRequest(id) {
     return;
   }
 
-  loadRequests();
+  await loadRequests();
 }
 
 async function completeRequest(id) {
@@ -328,7 +409,7 @@ async function completeRequest(id) {
     return;
   }
 
-  loadRequests();
+  await loadRequests();
 }
 
 async function saveTranslatorNotes(id) {
@@ -347,7 +428,7 @@ async function saveTranslatorNotes(id) {
   }
 
   alert("Notes saved.");
-  loadRequests();
+  await loadRequests();
 }
 
 async function translatorComplete(id) {
@@ -367,5 +448,5 @@ async function translatorComplete(id) {
     return;
   }
 
-  loadRequests();
+  await loadRequests();
 }
