@@ -1,136 +1,51 @@
-<!DOCTYPE html>
-<html>
-<head>
-  <title>Translation Request System</title>
-  <link rel="stylesheet" href="style.css">
-</head>
-<body>
-
-<div id="loginPage" class="login-card">
-  <h1>Translation Request System</h1>
-  <h2>New Translation Request</h2>
-<p class="form-subtitle">Enter student and translation service information below.</p>
-  
-  <input id="loginEmail" type="email" placeholder="Email">
-  <input id="loginPassword" type="password" placeholder="Password">
-
-  <button onclick="login()">Login</button>
-  <p id="loginMessage"></p>
-</div>
-
-<div id="appPage" class="hidden">
-
-  <div class="layout">
-
-    <aside class="sidebar">
-      <h2>Translation</h2>
-      <button onclick="showSection('dashboard')">Dashboard</button>
-      <button onclick="showSection('newRequest')">New Request</button>
-      <button onclick="showSection('requests')">Requests</button>
-      <button onclick="logout()">Logout</button>
-    </aside>
-
-    <main class="main">
-
-      <div class="topbar">
-        <h1>Translation Request System</h1>
-        <p id="userRole"></p>
+<section id="newRequest" class="section hidden">
+  <div class="request-card">
+    <div class="request-header">
+      <div>
+        <h2>New Translation Request</h2>
+        <p>Complete the student information and service details below.</p>
       </div>
+      <span class="request-pill">Pending Approval</span>
+    </div>
 
-      <section id="dashboard" class="section">
-        <div class="stats">
-          <div class="stat-card">
-            <h3>Pending Approval</h3>
-            <p id="pendingCount">0</p>
-          </div>
-          <div class="stat-card">
-            <h3>Waiting Translator</h3>
-            <p id="waitingCount">0</p>
-          </div>
-          <div class="stat-card">
-            <h3>Assigned</h3>
-            <p id="assignedCount">0</p>
-          </div>
-          <div class="stat-card">
-            <h3>Completed</h3>
-            <p id="completedCount">0</p>
-          </div>
-        </div>
-      </section>
+    <div class="form-section-title">Student Information</div>
 
-      <section id="newRequest" class="section hidden">
-        <div class="card">
-          <h2>New Translation Request</h2>
+    <div class="request-grid">
+      <input id="lasid" placeholder="LASID">
+      <input id="lastName" placeholder="Last Name">
+      <input id="firstName" placeholder="First Name">
+    </div>
 
-          <div class="grid">
-           
-            <input id="lasid" placeholder="LASID">
-            <input id="lastName" placeholder="Last Name">
-            <input id="firstName" placeholder="First Name">
+    <div class="form-section-title">Service Information</div>
 
-            <select id="schoolSelect">
-              <option value="">Choose School</option>
-            </select>
+    <div class="request-grid">
+      <select id="schoolSelect">
+        <option value="">Choose School</option>
+      </select>
 
-            <select id="languageSelect">
-              <option value="">Choose Language</option>
-            </select>
+      <select id="languageSelect">
+        <option value="">Choose Language</option>
+      </select>
 
-            <select id="sped">
-              <option value="">SPED Y or N</option>
-              <option value="Y">Y</option>
-              <option value="N">N</option>
-            </select>
+      <select id="sped">
+        <option value="">SPED Y or N</option>
+        <option value="Y">Y</option>
+        <option value="N">N</option>
+      </select>
 
-             <label>
-              Service Date
-              <input id="serviceDate" type="date">
-            </label>
+      <label>
+        Service Date
+        <input id="serviceDate" type="date">
+      </label>
+    </div>
 
-          </div>
+    <div class="form-section-title">Request Notes</div>
 
-          <textarea id="requestNotes" placeholder="Request Notes"></textarea>
+    <textarea id="requestNotes" placeholder="Enter any details about the translation request..."></textarea>
 
-          <button onclick="saveRequest()">Submit Request</button>
-          <p id="saveMessage"></p>
-        </div>
-      </section>
-
-      <section id="requests" class="section hidden">
-        <div class="card">
-          <h2>Requests</h2>
-
-          <input id="searchBox" placeholder="Search requests..." oninput="renderRequests()">
-
-          <table>
-            <thead>
-              <tr>
-                <th>ID</th>
-                <th>Status</th>
-                <th>Service Date</th>
-                <th>LASID</th>
-                <th>Student</th>
-                <th>School</th>
-                <th>Language</th>
-                <th>SPED</th>
-                <th>Translator</th>
-                <th>Actions</th>
-              </tr>
-            </thead>
-            <tbody id="requestTable"></tbody>
-          </table>
-        </div>
-      </section>
-
-    </main>
-
+    <div class="form-actions">
+      <button onclick="saveRequest()">Submit Request</button>
+      <p id="saveMessage"></p>
+    </div>
   </div>
-
-</div>
-
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<script src="supabase-config.js"></script>
-<script src="script.js"></script>
-
-</body>
-</html>
+</section>
