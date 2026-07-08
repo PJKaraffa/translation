@@ -6,9 +6,9 @@ let allRequests = [];
 document.addEventListener("DOMContentLoaded", checkUser);
 
 async function checkUser() {
-  const { data } = await supabaseClient.auth.getUser();
+  const { data, error } = await supabaseClient.auth.getUser();
 
-  if (!data.user) {
+  if (error || !data.user) {
     showLogin();
     return;
   }
@@ -16,27 +16,41 @@ async function checkUser() {
   currentUser = data.user;
 
   await loadProfile();
+
+  if (!currentProfile) {
+    showLogin();
+    return;
+  }
+
   await loadDropdowns();
   await loadTranslators();
 
   showApp();
+  showSection("dashboard");
   await loadRequests();
 }
 
 function showLogin() {
-  document.getElementById("loginPage").classList.remove("hidden");
-  document.getElementById("appPage").classList.add("hidden");
+  document.getElementById("loginPage").style.display = "block";
+  document.getElementById("appPage").style.display = "none";
 }
 
 function showApp() {
-  document.getElementById("loginPage").classList.add("hidden");
-  document.getElementById("appPage").classList.remove("hidden");
+  document.getElementById("loginPage").style.display = "none";
+  document.getElementById("appPage").style.display = "block";
 
   document.getElementById("userRole").textContent =
     `${currentProfile.full_name || currentProfile.email} | ${currentProfile.role}`;
 
-  if (currentProfile.role === "translator" || currentProfile.role === "viewer") {
-    document.querySelector("button[onclick=\"showSection('newRequest')\"]").classList.add("hidden");
+  const newRequestButton = document.querySelector(
+    "button[onclick=\"showSection('newRequest')\"]"
+  );
+
+  if (newRequestButton) {
+    newRequestButton.style.display =
+      currentProfile.role === "translator" || currentProfile.role === "viewer"
+        ? "none"
+        : "block";
   }
 }
 
@@ -45,7 +59,8 @@ function showSection(sectionId) {
     section.classList.add("hidden");
   });
 
-  document.getElementById(sectionId).classList.remove("hidden");
+  const selected = document.getElementById(sectionId);
+  if (selected) selected.classList.remove("hidden");
 }
 
 async function login() {
@@ -63,13 +78,17 @@ async function login() {
   }
 
   document.getElementById("loginMessage").textContent = "";
-  checkUser();
+  await checkUser();
 }
 
 async function logout() {
   await supabaseClient.auth.signOut();
+
   currentUser = null;
   currentProfile = null;
+  translators = [];
+  allRequests = [];
+
   showLogin();
 }
 
@@ -82,6 +101,7 @@ async function loadProfile() {
 
   if (error || !data) {
     alert("Profile not found.");
+    currentProfile = null;
     return;
   }
 
@@ -89,29 +109,34 @@ async function loadProfile() {
 }
 
 async function loadDropdowns() {
-  const { data: schools } = await supabaseClient
+  const { data: schools, error: schoolError } = await supabaseClient
     .from("schools")
     .select("*")
     .eq("active", true)
     .order("school_name");
 
-  const { data: languages } = await supabaseClient
+  const { data: languages, error: languageError } = await supabaseClient
     .from("languages")
     .select("*")
     .eq("active", true)
     .order("language_name");
 
+  if (schoolError) console.log(schoolError);
+  if (languageError) console.log(languageError);
+
   const schoolSelect = document.getElementById("schoolSelect");
   const languageSelect = document.getElementById("languageSelect");
+
+  if (!schoolSelect || !languageSelect) return;
 
   schoolSelect.innerHTML = `<option value="">Choose School</option>`;
   languageSelect.innerHTML = `<option value="">Choose Language</option>`;
 
-  schools.forEach(s => {
+  (schools || []).forEach(s => {
     schoolSelect.innerHTML += `<option value="${s.id}">${s.school_name}</option>`;
   });
 
-  languages.forEach(l => {
+  (languages || []).forEach(l => {
     languageSelect.innerHTML += `<option value="${l.id}">${l.language_name}</option>`;
   });
 }
@@ -125,6 +150,7 @@ async function loadTranslators() {
 
   if (error) {
     console.log(error);
+    translators = [];
     return;
   }
 
@@ -132,22 +158,29 @@ async function loadTranslators() {
 }
 
 async function saveRequest() {
+  const saveMessage = document.getElementById("saveMessage");
+
   const newRequest = {
     requestor_id: currentUser.id,
-    service_date: document.getElementById("serviceDate").value || null,
     lasid: document.getElementById("lasid").value.trim(),
     last_name: document.getElementById("lastName").value.trim(),
     first_name: document.getElementById("firstName").value.trim(),
     school_id: document.getElementById("schoolSelect").value || null,
     language_id: document.getElementById("languageSelect").value || null,
     sped: document.getElementById("sped").value,
+    service_date: document.getElementById("serviceDate").value || null,
     request_notes: document.getElementById("requestNotes").value.trim(),
     status: "Pending Approval"
   };
 
-  if (!newRequest.service_date || !newRequest.lasid || !newRequest.last_name || !newRequest.first_name) {
-    document.getElementById("saveMessage").textContent =
-      "Service Date, LASID, Last Name, and First Name are required.";
+  if (
+    !newRequest.lasid ||
+    !newRequest.last_name ||
+    !newRequest.first_name ||
+    !newRequest.service_date
+  ) {
+    saveMessage.textContent =
+      "LASID, Last Name, First Name, and Service Date are required.";
     return;
   }
 
@@ -156,11 +189,11 @@ async function saveRequest() {
     .insert([newRequest]);
 
   if (error) {
-    document.getElementById("saveMessage").textContent = "Error: " + error.message;
+    saveMessage.textContent = "Error: " + error.message;
     return;
   }
 
-  document.getElementById("saveMessage").textContent = "Request submitted.";
+  saveMessage.textContent = "Request submitted.";
 
   clearForm();
   await loadRequests();
@@ -170,7 +203,9 @@ async function saveRequest() {
 function clearForm() {
   document
     .querySelectorAll("#newRequest input, #newRequest textarea, #newRequest select")
-    .forEach(el => el.value = "");
+    .forEach(el => {
+      el.value = "";
+    });
 }
 
 async function loadRequests() {
@@ -209,6 +244,9 @@ function updateDashboard() {
 }
 
 function renderRequests() {
+  const tbody = document.getElementById("requestTable");
+  if (!tbody) return;
+
   const search = document.getElementById("searchBox")?.value.toLowerCase() || "";
 
   const filtered = allRequests.filter(r => {
@@ -219,15 +257,14 @@ function renderRequests() {
       ${r.lasid}
       ${r.last_name}
       ${r.first_name}
-      ${r.school?.school_name}
-      ${r.language?.language_name}
+      ${r.school?.school_name || ""}
+      ${r.language?.language_name || ""}
       ${r.sped}
     `.toLowerCase();
 
     return text.includes(search);
   });
 
-  const tbody = document.getElementById("requestTable");
   tbody.innerHTML = "";
 
   filtered.forEach(row => {
@@ -294,21 +331,10 @@ function adminActions(row) {
         ${translatorOptions}
       </select>
 
-      <button class="approve" onclick="approveWaiting(${row.id})">
-        Approve / Wait
-      </button>
-
-      <button class="assign" onclick="assignTranslator(${row.id})">
-        Assign Translator
-      </button>
-
-      <button class="reject" onclick="rejectRequest(${row.id})">
-        Reject
-      </button>
-
-      <button class="complete" onclick="completeRequest(${row.id})">
-        Complete
-      </button>
+      <button class="approve" onclick="approveWaiting(${row.id})">Approve / Wait</button>
+      <button class="assign" onclick="assignTranslator(${row.id})">Assign Translator</button>
+      <button class="reject" onclick="rejectRequest(${row.id})">Reject</button>
+      <button class="complete" onclick="completeRequest(${row.id})">Complete</button>
     </div>
   `;
 }
@@ -317,14 +343,8 @@ function translatorActions(row) {
   return `
     <div class="action-box">
       <textarea id="afterNotes-${row.id}" placeholder="After notes">${row.after_notes || ""}</textarea>
-
-      <button onclick="saveTranslatorNotes(${row.id})">
-        Save Notes
-      </button>
-
-      <button class="complete" onclick="translatorComplete(${row.id})">
-        Mark Complete
-      </button>
+      <button onclick="saveTranslatorNotes(${row.id})">Save Notes</button>
+      <button class="complete" onclick="translatorComplete(${row.id})">Mark Complete</button>
     </div>
   `;
 }
