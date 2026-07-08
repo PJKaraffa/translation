@@ -355,7 +355,8 @@ function adminEditBox(row) {
 }
 
 function editRequestActions(id) {
-  document.getElementById(`editBox-${id}`).classList.toggle("hidden");
+  const box = document.getElementById(`editBox-${id}`);
+  box.style.display = box.style.display === "none" || box.style.display === "" ? "grid" : "none";
 }
 
 function translatorActions(row) {
