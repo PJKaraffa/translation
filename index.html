@@ -18,7 +18,6 @@
 </div>
 
 <div id="appPage" class="hidden">
-
   <div class="layout">
 
     <aside class="sidebar">
@@ -57,66 +56,46 @@
         </div>
       </section>
 
-   <section id="newRequest" class="section hidden">
-  <div class="modern-request-card">
+      <section id="newRequest" class="section hidden">
+        <div class="request-card">
 
-    <div class="modern-request-header">
-      <div>
-        <h2>New Translation Request</h2>
-        <p>Submit student translation service information for review.</p>
-      </div>
-      <span>Pending Approval</span>
-    </div>
+          <div class="request-card-header">
+            <h2>New Translation Request</h2>
+            <p>Enter the required student and service information.</p>
+          </div>
 
-    <div class="modern-section-label">Student Information</div>
+          <div class="request-form-grid">
+            <input id="lasid" placeholder="LASID">
+            <input id="lastName" placeholder="Last Name">
+            <input id="firstName" placeholder="First Name">
 
-    <div class="modern-grid">
-      <input id="lasid" placeholder="LASID">
-      <input id="lastName" placeholder="Last Name">
-      <input id="firstName" placeholder="First Name">
-    </div>
+            <select id="schoolSelect">
+              <option value="">Choose School</option>
+            </select>
 
-    <div class="modern-section-label">Service Information</div>
+            <select id="languageSelect">
+              <option value="">Choose Language</option>
+            </select>
 
-    <div class="modern-grid">
-      <select id="schoolSelect">
-        <option value="">Choose School</option>
-      </select>
+            <select id="sped">
+              <option value="">SPED Y or N</option>
+              <option value="Y">Y</option>
+              <option value="N">N</option>
+            </select>
 
-      <select id="languageSelect">
-        <option value="">Choose Language</option>
-      </select>
-
-      <select id="sped">
-        <option value="">SPED Y or N</option>
-        <option value="Y">Y</option>
-        <option value="N">N</option>
-      </select>
-
-      <label class="modern-date">
-        Service Date
-        <input id="serviceDate" type="date">
-      </label>
-    </div>
-
-    <div class="modern-section-label">Request Notes</div>
-
-    <textarea id="requestNotes" placeholder="Add any details about the translation request..."></textarea>
-
-    <div class="modern-actions">
-      <button onclick="saveRequest()">Submit Request</button>
-      <p id="saveMessage"></p>
-    </div>
-
-  </div>
-</section>
-
+            <label class="date-field">
+              Service Date
+              <input id="serviceDate" type="date">
+            </label>
           </div>
 
           <textarea id="requestNotes" placeholder="Request Notes"></textarea>
 
-          <button onclick="saveRequest()">Submit Request</button>
-          <p id="saveMessage"></p>
+          <div class="request-footer">
+            <button onclick="saveRequest()">Submit Request</button>
+            <p id="saveMessage"></p>
+          </div>
+
         </div>
       </section>
 
@@ -149,7 +128,6 @@
     </main>
 
   </div>
-
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
