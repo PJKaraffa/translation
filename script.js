@@ -5,10 +5,16 @@ let allRequests = [];
 
 document.addEventListener("DOMContentLoaded", checkUser);
 
+/* ===========================
+   LOGIN / APP VIEW
+=========================== */
+
 async function checkUser() {
   const { data, error } = await supabaseClient.auth.getUser();
 
-  if (error || !data.user) {
+  if (error || !data || !data.user) {
+    currentUser = null;
+    currentProfile = null;
     showLogin();
     return;
   }
@@ -31,12 +37,18 @@ async function checkUser() {
 }
 
 function showLogin() {
+  document.getElementById("loginPage").classList.remove("hidden");
   document.getElementById("loginPage").style.display = "block";
+
+  document.getElementById("appPage").classList.add("hidden");
   document.getElementById("appPage").style.display = "none";
 }
 
 function showApp() {
+  document.getElementById("loginPage").classList.add("hidden");
   document.getElementById("loginPage").style.display = "none";
+
+  document.getElementById("appPage").classList.remove("hidden");
   document.getElementById("appPage").style.display = "block";
 
   document.getElementById("userRole").textContent =
@@ -60,7 +72,9 @@ function showSection(sectionId) {
   });
 
   const section = document.getElementById(sectionId);
-  if (section) section.classList.remove("hidden");
+  if (section) {
+    section.classList.remove("hidden");
+  }
 }
 
 async function login() {
@@ -91,6 +105,10 @@ async function logout() {
 
   showLogin();
 }
+
+/* ===========================
+   LOAD DATA
+=========================== */
 
 async function loadProfile() {
   const { data, error } = await supabaseClient
@@ -132,12 +150,16 @@ async function loadDropdowns() {
   schoolSelect.innerHTML = `<option value="">Choose School</option>`;
   languageSelect.innerHTML = `<option value="">Choose Language</option>`;
 
-  (schools || []).forEach(s => {
-    schoolSelect.innerHTML += `<option value="${s.id}">${s.school_name}</option>`;
+  (schools || []).forEach(school => {
+    schoolSelect.innerHTML += `
+      <option value="${school.id}">${school.school_name}</option>
+    `;
   });
 
-  (languages || []).forEach(l => {
-    languageSelect.innerHTML += `<option value="${l.id}">${l.language_name}</option>`;
+  (languages || []).forEach(language => {
+    languageSelect.innerHTML += `
+      <option value="${language.id}">${language.language_name}</option>
+    `;
   });
 }
 
@@ -156,6 +178,31 @@ async function loadTranslators() {
 
   translators = data || [];
 }
+
+async function loadRequests() {
+  const { data, error } = await supabaseClient
+    .from("translation_requests")
+    .select(`
+      *,
+      school:school_id(school_name),
+      language:language_id(language_name),
+      translator:translator_id(full_name,email)
+    `)
+    .order("created_at", { ascending: false });
+
+  if (error) {
+    console.log(error);
+    return;
+  }
+
+  allRequests = data || [];
+  updateDashboard();
+  renderRequests();
+}
+
+/* ===========================
+   NEW REQUEST
+=========================== */
 
 async function saveRequest() {
   const saveMessage = document.getElementById("saveMessage");
@@ -208,26 +255,9 @@ function clearForm() {
     });
 }
 
-async function loadRequests() {
-  const { data, error } = await supabaseClient
-    .from("translation_requests")
-    .select(`
-      *,
-      school:school_id(school_name),
-      language:language_id(language_name),
-      translator:translator_id(full_name,email)
-    `)
-    .order("created_at", { ascending: false });
-
-  if (error) {
-    console.log(error);
-    return;
-  }
-
-  allRequests = data || [];
-  updateDashboard();
-  renderRequests();
-}
+/* ===========================
+   DASHBOARD / REQUEST TABLE
+=========================== */
 
 function updateDashboard() {
   document.getElementById("pendingCount").textContent =
@@ -249,19 +279,19 @@ function renderRequests() {
 
   const search = document.getElementById("searchBox")?.value.toLowerCase() || "";
 
-  const filtered = allRequests.filter(r => {
+  const filtered = allRequests.filter(row => {
     const text = `
-      ${r.id}
-      ${r.status}
-      ${r.service_date}
-      ${r.lasid}
-      ${r.last_name}
-      ${r.first_name}
-      ${r.school?.school_name || ""}
-      ${r.language?.language_name || ""}
-      ${r.sped}
-      ${r.translator?.full_name || ""}
-      ${r.translator?.email || ""}
+      ${row.id}
+      ${row.status}
+      ${row.service_date}
+      ${row.lasid}
+      ${row.last_name}
+      ${row.first_name}
+      ${row.school?.school_name || ""}
+      ${row.language?.language_name || ""}
+      ${row.sped || ""}
+      ${row.translator?.full_name || ""}
+      ${row.translator?.email || ""}
     `.toLowerCase();
 
     return text.includes(search);
@@ -306,6 +336,10 @@ function statusBadge(status) {
   return `<span class="status ${cls}">${status}</span>`;
 }
 
+/* ===========================
+   ACTION BUTTONS
+=========================== */
+
 function actionButtons(row) {
   if (currentProfile.role === "super" || currentProfile.role === "coordinator") {
     return adminActions(row);
@@ -319,9 +353,13 @@ function actionButtons(row) {
 }
 
 function adminActions(row) {
-  const translatorOptions = translators.map(t => {
-    const selected = row.translator_id === t.id ? "selected" : "";
-    return `<option value="${t.id}" ${selected}>${t.full_name || t.email}</option>`;
+  const translatorOptions = translators.map(translator => {
+    const selected = row.translator_id === translator.id ? "selected" : "";
+    return `
+      <option value="${translator.id}" ${selected}>
+        ${translator.full_name || translator.email}
+      </option>
+    `;
   }).join("");
 
   if (row.status !== "Pending Approval") {
@@ -329,57 +367,74 @@ function adminActions(row) {
       <button onclick="toggleEdit(${row.id})">Edit</button>
 
       <div id="edit-${row.id}" class="action-box" style="display:none;">
-        <textarea id="adminNotes-${row.id}" placeholder="Admin notes">${row.admin_notes || ""}</textarea>
-
-        <select id="translator-${row.id}">
-          <option value="">Choose Translator Later</option>
-          ${translatorOptions}
-        </select>
-
-        <button class="approve" onclick="approveWaiting(${row.id})">Approve / Wait</button>
-        <button class="assign" onclick="assignTranslator(${row.id})">Assign Translator</button>
-        <button class="reject" onclick="rejectRequest(${row.id})">Reject</button>
-        <button class="complete" onclick="completeRequest(${row.id})">Complete</button>
+        ${adminActionControls(row, translatorOptions)}
       </div>
     `;
   }
 
   return `
     <div class="action-box">
-      <textarea id="adminNotes-${row.id}" placeholder="Admin notes">${row.admin_notes || ""}</textarea>
-
-      <select id="translator-${row.id}">
-        <option value="">Choose Translator Later</option>
-        ${translatorOptions}
-      </select>
-
-      <button class="approve" onclick="approveWaiting(${row.id})">Approve / Wait</button>
-      <button class="assign" onclick="assignTranslator(${row.id})">Assign Translator</button>
-      <button class="reject" onclick="rejectRequest(${row.id})">Reject</button>
-      <button class="complete" onclick="completeRequest(${row.id})">Complete</button>
+      ${adminActionControls(row, translatorOptions)}
     </div>
+  `;
+}
+
+function adminActionControls(row, translatorOptions) {
+  return `
+    <textarea id="adminNotes-${row.id}" placeholder="Admin notes">${row.admin_notes || ""}</textarea>
+
+    <select id="translator-${row.id}">
+      <option value="">Choose Translator Later</option>
+      ${translatorOptions}
+    </select>
+
+    <button class="approve" onclick="approveWaiting(${row.id})">
+      Approve / Wait
+    </button>
+
+    <button class="assign" onclick="assignTranslator(${row.id})">
+      Assign Translator
+    </button>
+
+    <button class="reject" onclick="rejectRequest(${row.id})">
+      Reject
+    </button>
+
+    <button class="complete" onclick="completeRequest(${row.id})">
+      Complete
+    </button>
   `;
 }
 
 function toggleEdit(id) {
   const box = document.getElementById(`edit-${id}`);
-
   if (!box) return;
 
-  box.style.display = box.style.display === "none" || box.style.display === ""
-    ? "grid"
-    : "none";
+  box.style.display =
+    box.style.display === "none" || box.style.display === ""
+      ? "grid"
+      : "none";
 }
 
 function translatorActions(row) {
   return `
     <div class="action-box">
       <textarea id="afterNotes-${row.id}" placeholder="After notes">${row.after_notes || ""}</textarea>
-      <button onclick="saveTranslatorNotes(${row.id})">Save Notes</button>
-      <button class="complete" onclick="translatorComplete(${row.id})">Mark Complete</button>
+
+      <button onclick="saveTranslatorNotes(${row.id})">
+        Save Notes
+      </button>
+
+      <button class="complete" onclick="translatorComplete(${row.id})">
+        Mark Complete
+      </button>
     </div>
   `;
 }
+
+/* ===========================
+   ADMIN UPDATES
+=========================== */
 
 async function approveWaiting(id) {
   const adminNotes = document.getElementById(`adminNotes-${id}`).value.trim();
@@ -463,6 +518,10 @@ async function completeRequest(id) {
 
   await loadRequests();
 }
+
+/* ===========================
+   TRANSLATOR UPDATES
+=========================== */
 
 async function saveTranslatorNotes(id) {
   const afterNotes = document.getElementById(`afterNotes-${id}`).value.trim();
