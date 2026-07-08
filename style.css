@@ -45,8 +45,13 @@ textarea {
   font-size: 15px;
 }
 
+label {
+  font-size: 13px;
+  font-weight: bold;
+}
+
 textarea {
-  min-height: 90px;
+  min-height: 85px;
 }
 
 button {
@@ -70,6 +75,10 @@ button:hover {
   background: #dc2626;
 }
 
+.assign {
+  background: #0ea5e9;
+}
+
 .complete {
   background: #7c3aed;
 }
@@ -83,7 +92,7 @@ button:hover {
 
 .grid {
   display: grid;
-  grid-template-columns: repeat(4, 1fr);
+  grid-template-columns: repeat(3, 1fr);
   gap: 12px;
 }
 
@@ -111,6 +120,7 @@ td {
   padding: 5px 9px;
   border-radius: 20px;
   display: inline-block;
+  white-space: nowrap;
 }
 
 .pending {
@@ -118,7 +128,17 @@ td {
   color: #92400e;
 }
 
-.approved {
+.waiting {
+  background: #ffedd5;
+  color: #9a3412;
+}
+
+.assigned {
+  background: #dbeafe;
+  color: #1e40af;
+}
+
+.completed {
   background: #dcfce7;
   color: #166534;
 }
@@ -128,24 +148,14 @@ td {
   color: #991b1b;
 }
 
-.assigned {
-  background: #dbeafe;
-  color: #1e40af;
-}
-
-.completed {
-  background: #ede9fe;
-  color: #5b21b6;
-}
-
 .action-box {
   display: grid;
   gap: 6px;
+  min-width: 210px;
 }
 
-.action-box select,
 .action-box textarea {
-  margin-bottom: 4px;
+  min-height: 55px;
 }
 
 @media (max-width: 900px) {
