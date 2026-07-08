@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Translation Request System</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<div id="loginPage" class="login-card">
+  <h1>Translation Request System</h1>
+  <h2>Login</h2>
+
+  <input id="loginEmail" type="email" placeholder="Email">
+  <input id="loginPassword" type="password" placeholder="Password">
+
+  <button onclick="login()">Login</button>
+  <p id="loginMessage"></p>
+</div>
+
+<div id="appPage" class="hidden">
+
+  <div class="topbar">
+    <div>
+      <h1>Translation Request System</h1>
+      <p id="userRole"></p>
+    </div>
+    <button onclick="logout()">Logout</button>
+  </div>
+
+  <div id="requestFormCard" class="card">
+    <h2>New Translation Request</h2>
+
+    <div class="grid">
+      <input id="lastName" placeholder="Last Name">
+      <input id="firstName" placeholder="First Name">
+      <input id="email" type="email" placeholder="Email">
+      <input id="phone" placeholder="Phone">
+      <input id="serviceDate" type="date">
+      <input id="language" placeholder="Language">
+      <input id="school" placeholder="School">
+
+      <select id="sped">
+        <option value="">SPED Y or N</option>
+        <option value="Y">Y</option>
+        <option value="N">N</option>
+      </select>
+    </div>
+
+    <textarea id="requestNotes" placeholder="Request Notes"></textarea>
+
+    <button onclick="saveRequest()">Submit Request</button>
+    <p id="saveMessage"></p>
+  </div>
+
+  <div class="card">
+    <h2>Requests</h2>
+
+    <table>
+      <thead>
+        <tr>
+          <th>ID</th>
+          <th>Status</th>
+          <th>Service Date</th>
+          <th>Student</th>
+          <th>Language</th>
+          <th>School</th>
+          <th>SPED</th>
+          <th>Translator</th>
+          <th>Admin Action</th>
+        </tr>
+      </thead>
+      <tbody id="requestTable"></tbody>
+    </table>
+  </div>
+
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="supabase-config.js"></script>
+<script src="script.js"></script>
+
+</body>
+</html>
