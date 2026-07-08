@@ -59,8 +59,8 @@ function showSection(sectionId) {
     section.classList.add("hidden");
   });
 
-  const selected = document.getElementById(sectionId);
-  if (selected) selected.classList.remove("hidden");
+  const section = document.getElementById(sectionId);
+  if (section) section.classList.remove("hidden");
 }
 
 async function login() {
@@ -260,6 +260,8 @@ function renderRequests() {
       ${r.school?.school_name || ""}
       ${r.language?.language_name || ""}
       ${r.sped}
+      ${r.translator?.full_name || ""}
+      ${r.translator?.email || ""}
     `.toLowerCase();
 
     return text.includes(search);
@@ -317,25 +319,30 @@ function actionButtons(row) {
 }
 
 function adminActions(row) {
-  const isPending = row.status === "Pending Approval";
-
-  if (!isPending) {
-    return `
-      <button onclick="editRequestActions(${row.id})">Edit</button>
-      <div id="editBox-${row.id}" class="action-box hidden">
-        ${adminEditBox(row)}
-      </div>
-    `;
-  }
-
-  return adminEditBox(row);
-}
-
-function adminEditBox(row) {
   const translatorOptions = translators.map(t => {
     const selected = row.translator_id === t.id ? "selected" : "";
     return `<option value="${t.id}" ${selected}>${t.full_name || t.email}</option>`;
   }).join("");
+
+  if (row.status !== "Pending Approval") {
+    return `
+      <button onclick="toggleEdit(${row.id})">Edit</button>
+
+      <div id="edit-${row.id}" class="action-box" style="display:none;">
+        <textarea id="adminNotes-${row.id}" placeholder="Admin notes">${row.admin_notes || ""}</textarea>
+
+        <select id="translator-${row.id}">
+          <option value="">Choose Translator Later</option>
+          ${translatorOptions}
+        </select>
+
+        <button class="approve" onclick="approveWaiting(${row.id})">Approve / Wait</button>
+        <button class="assign" onclick="assignTranslator(${row.id})">Assign Translator</button>
+        <button class="reject" onclick="rejectRequest(${row.id})">Reject</button>
+        <button class="complete" onclick="completeRequest(${row.id})">Complete</button>
+      </div>
+    `;
+  }
 
   return `
     <div class="action-box">
@@ -354,9 +361,14 @@ function adminEditBox(row) {
   `;
 }
 
-function editRequestActions(id) {
-  const box = document.getElementById(`editBox-${id}`);
-  box.style.display = box.style.display === "none" || box.style.display === "" ? "grid" : "none";
+function toggleEdit(id) {
+  const box = document.getElementById(`edit-${id}`);
+
+  if (!box) return;
+
+  box.style.display = box.style.display === "none" || box.style.display === ""
+    ? "grid"
+    : "none";
 }
 
 function translatorActions(row) {
