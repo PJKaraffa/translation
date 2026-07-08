@@ -57,34 +57,59 @@
         </div>
       </section>
 
-      <section id="newRequest" class="section hidden">
-        <div class="card">
-          <h2>New Translation Request</h2>
+   <section id="newRequest" class="section hidden">
+  <div class="modern-request-card">
 
-          <div class="grid">
-            
-            <input id="lasid" placeholder="LASID">
-            <input id="lastName" placeholder="Last Name">
-            <input id="firstName" placeholder="First Name">
+    <div class="modern-request-header">
+      <div>
+        <h2>New Translation Request</h2>
+        <p>Submit student translation service information for review.</p>
+      </div>
+      <span>Pending Approval</span>
+    </div>
 
-            <select id="schoolSelect">
-              <option value="">Choose School</option>
-            </select>
+    <div class="modern-section-label">Student Information</div>
 
-            <select id="languageSelect">
-              <option value="">Choose Language</option>
-            </select>
+    <div class="modern-grid">
+      <input id="lasid" placeholder="LASID">
+      <input id="lastName" placeholder="Last Name">
+      <input id="firstName" placeholder="First Name">
+    </div>
 
-            <select id="sped">
-              <option value="">SPED Y or N</option>
-              <option value="Y">Y</option>
-              <option value="N">N</option>
-            </select>
+    <div class="modern-section-label">Service Information</div>
 
-            <label>
-              Service Date
-              <input id="serviceDate" type="date">
-            </label>
+    <div class="modern-grid">
+      <select id="schoolSelect">
+        <option value="">Choose School</option>
+      </select>
+
+      <select id="languageSelect">
+        <option value="">Choose Language</option>
+      </select>
+
+      <select id="sped">
+        <option value="">SPED Y or N</option>
+        <option value="Y">Y</option>
+        <option value="N">N</option>
+      </select>
+
+      <label class="modern-date">
+        Service Date
+        <input id="serviceDate" type="date">
+      </label>
+    </div>
+
+    <div class="modern-section-label">Request Notes</div>
+
+    <textarea id="requestNotes" placeholder="Add any details about the translation request..."></textarea>
+
+    <div class="modern-actions">
+      <button onclick="saveRequest()">Submit Request</button>
+      <p id="saveMessage"></p>
+    </div>
+
+  </div>
+</section>
 
           </div>
 
