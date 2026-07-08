@@ -6,17 +6,19 @@ document.addEventListener("DOMContentLoaded", checkUser);
 
 async function checkUser() {
   const { data } = await supabaseClient.auth.getUser();
-  console.log(data.user);
+
   if (!data.user) {
     showLogin();
     return;
   }
 
   currentUser = data.user;
+
   await loadProfile();
-  showApp();
   await loadTranslators();
-  await loadRequests();
+
+  showApp();
+  loadRequests();
 }
 
 function showLogin() {
@@ -29,9 +31,9 @@ function showApp() {
   document.getElementById("appPage").classList.remove("hidden");
 
   document.getElementById("userRole").textContent =
-    `Logged in as: ${currentProfile.email} | Role: ${currentProfile.role}`;
+    `Logged in as: ${currentProfile.full_name || currentProfile.email} | Role: ${currentProfile.role}`;
 
-  if (currentProfile.role === "translator") {
+  if (currentProfile.role === "translator" || currentProfile.role === "viewer") {
     document.getElementById("requestFormCard").classList.add("hidden");
   } else {
     document.getElementById("requestFormCard").classList.remove("hidden");
@@ -71,7 +73,7 @@ async function loadProfile() {
     .single();
 
   if (error || !data) {
-    alert("Profile not found. Please create a profile row for this user.");
+    alert("Profile not found.");
     return;
   }
 
@@ -90,7 +92,7 @@ async function loadTranslators() {
     return;
   }
 
-  translators = data;
+  translators = data || [];
 }
 
 async function saveRequest() {
@@ -100,7 +102,8 @@ async function saveRequest() {
     first_name: document.getElementById("firstName").value.trim(),
     email: document.getElementById("email").value.trim(),
     phone: document.getElementById("phone").value.trim(),
-    service_date: document.getElementById("serviceDate").value,
+    service_date: document.getElementById("serviceDate").value || null,
+    need_by_date: document.getElementById("needByDate").value || null,
     language: document.getElementById("language").value.trim(),
     school: document.getElementById("school").value.trim(),
     sped: document.getElementById("sped").value,
@@ -118,12 +121,14 @@ async function saveRequest() {
   }
 
   document.getElementById("saveMessage").textContent = "Request submitted for approval.";
+
   clearForm();
   loadRequests();
 }
 
 function clearForm() {
-  document.querySelectorAll("#requestFormCard input, #requestFormCard textarea, #requestFormCard select")
+  document
+    .querySelectorAll("#requestFormCard input, #requestFormCard textarea, #requestFormCard select")
     .forEach(el => el.value = "");
 }
 
@@ -152,12 +157,13 @@ async function loadRequests() {
 function buildRow(row) {
   const translatorName = row.translator
     ? row.translator.full_name || row.translator.email
-    : "";
+    : "Not Assigned";
 
   return `
     <tr>
       <td>${row.id}</td>
       <td>${statusBadge(row.status)}</td>
+      <td>${row.need_by_date || ""}</td>
       <td>${row.service_date || ""}</td>
       <td>${row.last_name || ""}, ${row.first_name || ""}</td>
       <td>${row.language || ""}</td>
@@ -172,17 +178,17 @@ function buildRow(row) {
 function statusBadge(status) {
   let cls = "pending";
 
-  if (status === "Approved") cls = "approved";
-  if (status === "Rejected") cls = "rejected";
+  if (status === "Waiting for Translator") cls = "waiting";
   if (status === "Assigned") cls = "assigned";
   if (status === "Completed") cls = "completed";
+  if (status === "Rejected") cls = "rejected";
 
   return `<span class="status ${cls}">${status}</span>`;
 }
 
 function actionButtons(row) {
-  if (currentProfile.role === "super") {
-    return superUserActions(row);
+  if (currentProfile.role === "super" || currentProfile.role === "coordinator") {
+    return adminActions(row);
   }
 
   if (currentProfile.role === "translator" && row.translator_id === currentUser.id) {
@@ -192,7 +198,7 @@ function actionButtons(row) {
   return "";
 }
 
-function superUserActions(row) {
+function adminActions(row) {
   const translatorOptions = translators.map(t => {
     const selected = row.translator_id === t.id ? "selected" : "";
     return `<option value="${t.id}" ${selected}>${t.full_name || t.email}</option>`;
@@ -200,16 +206,28 @@ function superUserActions(row) {
 
   return `
     <div class="action-box">
+      <textarea id="adminNotes-${row.id}" placeholder="Admin notes">${row.admin_notes || ""}</textarea>
+
       <select id="translator-${row.id}">
-        <option value="">Choose Translator</option>
+        <option value="">Choose Translator Later</option>
         ${translatorOptions}
       </select>
 
-      <textarea id="adminNotes-${row.id}" placeholder="Admin notes">${row.admin_notes || ""}</textarea>
+      <button class="approve" onclick="approveWaiting(${row.id})">
+        Approve / Wait
+      </button>
 
-      <button class="approve" onclick="approveRequest(${row.id})">Approve / Assign</button>
-      <button class="reject" onclick="rejectRequest(${row.id})">Reject</button>
-      <button class="complete" onclick="completeRequest(${row.id})">Complete</button>
+      <button class="assign" onclick="assignTranslator(${row.id})">
+        Assign Translator
+      </button>
+
+      <button class="reject" onclick="rejectRequest(${row.id})">
+        Reject
+      </button>
+
+      <button class="complete" onclick="completeRequest(${row.id})">
+        Complete
+      </button>
     </div>
   `;
 }
@@ -218,13 +236,39 @@ function translatorActions(row) {
   return `
     <div class="action-box">
       <textarea id="afterNotes-${row.id}" placeholder="After notes">${row.after_notes || ""}</textarea>
-      <button onclick="saveTranslatorNotes(${row.id})">Save Notes</button>
-      <button class="complete" onclick="translatorComplete(${row.id})">Mark Complete</button>
+
+      <button onclick="saveTranslatorNotes(${row.id})">
+        Save Notes
+      </button>
+
+      <button class="complete" onclick="translatorComplete(${row.id})">
+        Mark Complete
+      </button>
     </div>
   `;
 }
 
-async function approveRequest(id) {
+async function approveWaiting(id) {
+  const adminNotes = document.getElementById(`adminNotes-${id}`).value.trim();
+
+  const { error } = await supabaseClient
+    .from("translation_requests")
+    .update({
+      status: "Waiting for Translator",
+      admin_notes: adminNotes,
+      approved_at: new Date().toISOString()
+    })
+    .eq("id", id);
+
+  if (error) {
+    alert(error.message);
+    return;
+  }
+
+  loadRequests();
+}
+
+async function assignTranslator(id) {
   const translatorId = document.getElementById(`translator-${id}`).value;
   const adminNotes = document.getElementById(`adminNotes-${id}`).value.trim();
 
@@ -239,7 +283,7 @@ async function approveRequest(id) {
       status: "Assigned",
       translator_id: translatorId,
       admin_notes: adminNotes,
-      approved_at: new Date().toISOString()
+      assigned_at: new Date().toISOString()
     })
     .eq("id", id);
 
@@ -274,7 +318,8 @@ async function completeRequest(id) {
   const { error } = await supabaseClient
     .from("translation_requests")
     .update({
-      status: "Completed"
+      status: "Completed",
+      completed_at: new Date().toISOString()
     })
     .eq("id", id);
 
@@ -312,7 +357,8 @@ async function translatorComplete(id) {
     .from("translation_requests")
     .update({
       after_notes: afterNotes,
-      status: "Completed"
+      status: "Completed",
+      completed_at: new Date().toISOString()
     })
     .eq("id", id);
 
