@@ -35,7 +35,17 @@
       <input id="firstName" placeholder="First Name">
       <input id="email" type="email" placeholder="Email">
       <input id="phone" placeholder="Phone">
-      <input id="serviceDate" type="date">
+
+      <label>
+        Service Date
+        <input id="serviceDate" type="date">
+      </label>
+
+      <label>
+        Need By Date
+        <input id="needByDate" type="date">
+      </label>
+
       <input id="language" placeholder="Language">
       <input id="school" placeholder="School">
 
@@ -60,13 +70,14 @@
         <tr>
           <th>ID</th>
           <th>Status</th>
+          <th>Need By</th>
           <th>Service Date</th>
           <th>Student</th>
           <th>Language</th>
           <th>School</th>
           <th>SPED</th>
           <th>Translator</th>
-          <th>Admin Action</th>
+          <th>Actions</th>
         </tr>
       </thead>
       <tbody id="requestTable"></tbody>
