@@ -4,8 +4,8 @@
 
 body {
   margin: 0;
-  font-family: Arial, Helvetica, sans-serif;
-  background: #f1f5f9;
+  font-family: "Segoe UI", Arial, sans-serif;
+  background: linear-gradient(135deg, #eef4ff, #f8fafc);
   color: #0f172a;
 }
 
@@ -13,211 +13,121 @@ body {
   display: none;
 }
 
-.login-card {
-  width: 420px;
-  max-width: 95%;
-  margin: 80px auto;
-  background: white;
-  padding: 30px;
-  border-radius: 16px;
-  box-shadow: 0 10px 30px rgba(0,0,0,.12);
-  text-align: center;
-}
-
-.layout {
-  display: flex;
-  min-height: 100vh;
-}
-
-.sidebar {
-  width: 240px;
-  background: #0f172a;
-  color: white;
-  padding: 25px;
-}
-
-.sidebar h2 {
-  margin-top: 0;
-}
-
-.sidebar button {
-  width: 100%;
-  margin-bottom: 10px;
-  background: #1e293b;
-  text-align: left;
-}
-
-.sidebar button:hover {
-  background: #334155;
-}
-
 .main {
-  flex: 1;
-  padding: 30px;
+  padding: 32px;
 }
 
 .topbar {
-  margin-bottom: 25px;
+  background: #ffffff;
+  padding: 22px 28px;
+  border-radius: 18px;
+  box-shadow: 0 8px 24px rgba(15, 23, 42, 0.08);
+  margin-bottom: 24px;
 }
 
-.card,
-.stat-card {
-  background: white;
-  padding: 22px;
-  border-radius: 14px;
-  box-shadow: 0 8px 20px rgba(0,0,0,.07);
-}
-
-.stats {
-  display: grid;
-  grid-template-columns: repeat(4, 1fr);
-  gap: 20px;
-}
-
-.stat-card h3 {
+.topbar h1 {
   margin: 0;
-  font-size: 15px;
-  color: #475569;
+  font-size: 30px;
+  letter-spacing: -0.5px;
 }
 
-.stat-card p {
-  font-size: 36px;
-  font-weight: bold;
-  margin: 10px 0 0;
+#userRole {
+  margin: 8px 0 0;
+  color: #475569;
+  font-size: 14px;
+}
+
+.card {
+  background: #ffffff;
+  padding: 30px;
+  border-radius: 18px;
+  box-shadow: 0 12px 32px rgba(15, 23, 42, 0.10);
+  border: 1px solid #e2e8f0;
+}
+
+.card h2 {
+  margin-top: 0;
+  margin-bottom: 22px;
+  font-size: 24px;
 }
 
 .grid {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
-  gap: 12px;
+  gap: 18px 14px;
 }
 
 input,
 select,
 textarea {
   width: 100%;
-  padding: 11px;
-  margin-bottom: 12px;
+  padding: 13px 14px;
   border: 1px solid #cbd5e1;
-  border-radius: 8px;
+  border-radius: 10px;
   font-size: 15px;
+  background: #ffffff;
+}
+
+input:focus,
+select:focus,
+textarea:focus {
+  outline: none;
+  border-color: #2563eb;
+  box-shadow: 0 0 0 4px rgba(37, 99, 235, 0.14);
 }
 
 label {
   font-size: 13px;
-  font-weight: bold;
+  font-weight: 700;
+  color: #334155;
+}
+
+label input {
+  margin-top: 5px;
 }
 
 textarea {
-  min-height: 90px;
+  margin-top: 18px;
+  min-height: 115px;
+  resize: vertical;
 }
 
 button {
-  background: #2563eb;
+  background: linear-gradient(135deg, #2563eb, #1d4ed8);
   color: white;
   border: none;
-  padding: 10px 14px;
-  border-radius: 8px;
+  padding: 12px 18px;
+  border-radius: 10px;
   cursor: pointer;
+  font-size: 15px;
+  font-weight: 700;
+  margin-top: 12px;
+  box-shadow: 0 6px 16px rgba(37, 99, 235, 0.25);
 }
 
 button:hover {
-  background: #1d4ed8;
+  transform: translateY(-1px);
+  box-shadow: 0 8px 20px rgba(37, 99, 235, 0.32);
 }
 
-.approve {
-  background: #16a34a;
-}
-
-.assign {
-  background: #0284c7;
-}
-
-.reject {
-  background: #dc2626;
-}
-
-.complete {
-  background: #7c3aed;
-}
-
-table {
-  width: 100%;
-  border-collapse: collapse;
-  margin-top: 15px;
-}
-
-th {
-  background: #0f172a;
-  color: white;
-}
-
-th,
-td {
-  padding: 10px;
-  border-bottom: 1px solid #e2e8f0;
-  text-align: left;
-  vertical-align: top;
-}
-
-.status {
-  font-weight: bold;
-  padding: 5px 9px;
-  border-radius: 20px;
-  white-space: nowrap;
-  display: inline-block;
-}
-
-.pending {
-  background: #fef3c7;
-  color: #92400e;
-}
-
-.waiting {
-  background: #ffedd5;
-  color: #9a3412;
-}
-
-.assigned {
-  background: #dbeafe;
-  color: #1e40af;
-}
-
-.completed {
-  background: #dcfce7;
+#saveMessage {
+  margin-top: 14px;
+  font-weight: 700;
   color: #166534;
 }
 
-.rejected {
-  background: #fee2e2;
-  color: #991b1b;
-}
-
-.action-box {
-  display: grid;
-  gap: 6px;
-  min-width: 210px;
-}
-
-.action-box textarea {
-  min-height: 55px;
-}
-
 @media (max-width: 900px) {
-  .layout {
-    flex-direction: column;
-  }
-
-  .sidebar {
-    width: 100%;
-  }
-
-  .stats,
   .grid {
     grid-template-columns: 1fr;
   }
 
-  table {
-    font-size: 13px;
+  .main {
+    padding: 18px;
   }
+}
+.form-subtitle {
+  margin-top: -14px;
+  margin-bottom: 24px;
+  color: #64748b;
+  font-size: 14px;
 }
