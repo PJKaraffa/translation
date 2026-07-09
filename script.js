@@ -4,10 +4,6 @@ let allRequests = [];
 
 document.addEventListener("DOMContentLoaded", checkUser);
 
-/* ===========================
-   LOGIN / APP VIEW
-=========================== */
-
 async function checkUser() {
   const { data, error } = await supabaseClient.auth.getUser();
 
@@ -52,13 +48,13 @@ function showApp() {
   document.getElementById("userRole").textContent =
     `${currentProfile.full_name || currentProfile.email} | ${currentProfile.role}`;
 
-  const newRequestButton = document.querySelector(
-    "button[onclick=\"showSection('newRequest')\"]"
-  );
+  const actionsHeader = document.getElementById("actionsHeader");
 
-  if (newRequestButton) {
-    newRequestButton.style.display =
-      currentProfile.role === "viewer" ? "none" : "block";
+  if (actionsHeader) {
+    actionsHeader.style.display =
+      currentProfile.role === "super" || currentProfile.role === "coordinator"
+        ? "table-cell"
+        : "none";
   }
 }
 
@@ -99,10 +95,6 @@ async function logout() {
   showLogin();
 }
 
-/* ===========================
-   LOAD DATA
-=========================== */
-
 async function loadProfile() {
   const { data, error } = await supabaseClient
     .from("profiles")
@@ -120,20 +112,17 @@ async function loadProfile() {
 }
 
 async function loadDropdowns() {
-  const { data: schools, error: schoolError } = await supabaseClient
+  const { data: schools } = await supabaseClient
     .from("schools")
     .select("*")
     .eq("active", true)
     .order("school_name");
 
-  const { data: languages, error: languageError } = await supabaseClient
+  const { data: languages } = await supabaseClient
     .from("languages")
     .select("*")
     .eq("active", true)
     .order("language_name");
-
-  if (schoolError) console.log(schoolError);
-  if (languageError) console.log(languageError);
 
   const schoolSelect = document.getElementById("schoolSelect");
   const languageSelect = document.getElementById("languageSelect");
@@ -144,15 +133,11 @@ async function loadDropdowns() {
   languageSelect.innerHTML = `<option value="">Choose Language</option>`;
 
   (schools || []).forEach(school => {
-    schoolSelect.innerHTML += `
-      <option value="${school.id}">${school.school_name}</option>
-    `;
+    schoolSelect.innerHTML += `<option value="${school.id}">${school.school_name}</option>`;
   });
 
   (languages || []).forEach(language => {
-    languageSelect.innerHTML += `
-      <option value="${language.id}">${language.language_name}</option>
-    `;
+    languageSelect.innerHTML += `<option value="${language.id}">${language.language_name}</option>`;
   });
 }
 
@@ -176,10 +161,6 @@ async function loadRequests() {
   renderRequests();
 }
 
-/* ===========================
-   NEW REQUEST
-=========================== */
-
 async function saveRequest() {
   const saveMessage = document.getElementById("saveMessage");
 
@@ -191,6 +172,7 @@ async function saveRequest() {
     school_id: document.getElementById("schoolSelect").value || null,
     language_id: document.getElementById("languageSelect").value || null,
     sped: document.getElementById("sped").value,
+    translator_name: document.getElementById("translatorName").value.trim(),
     service_date: document.getElementById("serviceDate").value || null,
     request_notes: document.getElementById("requestNotes").value.trim(),
     status: "Pending Approval"
@@ -230,10 +212,6 @@ function clearForm() {
       el.value = "";
     });
 }
-
-/* ===========================
-   DASHBOARD / REQUEST TABLE
-=========================== */
 
 function updateDashboard() {
   document.getElementById("pendingCount").textContent =
@@ -282,6 +260,10 @@ function renderRequests() {
 function buildRow(row) {
   const translatorName = row.translator_name || "Not Assigned";
 
+  const canEdit =
+    currentProfile.role === "super" ||
+    currentProfile.role === "coordinator";
+
   return `
     <tr>
       <td>${row.id}</td>
@@ -293,7 +275,7 @@ function buildRow(row) {
       <td>${row.language?.language_name || ""}</td>
       <td>${row.sped || ""}</td>
       <td>${translatorName}</td>
-      <td>${actionButtons(row)}</td>
+      ${canEdit ? `<td>${actionButtons(row)}</td>` : ""}
     </tr>
   `;
 }
@@ -308,10 +290,6 @@ function statusBadge(status) {
 
   return `<span class="status ${cls}">${status}</span>`;
 }
-
-/* ===========================
-   ACTION BUTTONS
-=========================== */
 
 function actionButtons(row) {
   if (currentProfile.role === "super" || currentProfile.role === "coordinator") {
@@ -376,10 +354,6 @@ function toggleEdit(id) {
       ? "grid"
       : "none";
 }
-
-/* ===========================
-   ADMIN UPDATES
-=========================== */
 
 async function approveWaiting(id) {
   const adminNotes = document.getElementById(`adminNotes-${id}`).value.trim();
