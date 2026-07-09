@@ -1,6 +1,5 @@
 let currentUser = null;
 let currentProfile = null;
-let translators = [];
 let allRequests = [];
 
 document.addEventListener("DOMContentLoaded", checkUser);
@@ -29,7 +28,6 @@ async function checkUser() {
   }
 
   await loadDropdowns();
-  await loadTranslators();
 
   showApp();
   showSection("dashboard");
@@ -60,9 +58,7 @@ function showApp() {
 
   if (newRequestButton) {
     newRequestButton.style.display =
-      currentProfile.role === "translator" || currentProfile.role === "viewer"
-        ? "none"
-        : "block";
+      currentProfile.role === "viewer" ? "none" : "block";
   }
 }
 
@@ -72,9 +68,7 @@ function showSection(sectionId) {
   });
 
   const section = document.getElementById(sectionId);
-  if (section) {
-    section.classList.remove("hidden");
-  }
+  if (section) section.classList.remove("hidden");
 }
 
 async function login() {
@@ -100,7 +94,6 @@ async function logout() {
 
   currentUser = null;
   currentProfile = null;
-  translators = [];
   allRequests = [];
 
   showLogin();
@@ -163,30 +156,13 @@ async function loadDropdowns() {
   });
 }
 
-async function loadTranslators() {
-  const { data, error } = await supabaseClient
-    .from("profiles")
-    .select("*")
-    .eq("role", "translator")
-    .order("full_name");
-
-  if (error) {
-    console.log(error);
-    translators = [];
-    return;
-  }
-
-  translators = data || [];
-}
-
 async function loadRequests() {
   const { data, error } = await supabaseClient
     .from("translation_requests")
     .select(`
       *,
       school:school_id(school_name),
-      language:language_id(language_name),
-      translator:translator_id(full_name,email)
+      language:language_id(language_name)
     `)
     .order("created_at", { ascending: false });
 
@@ -290,8 +266,7 @@ function renderRequests() {
       ${row.school?.school_name || ""}
       ${row.language?.language_name || ""}
       ${row.sped || ""}
-      ${row.translator?.full_name || ""}
-      ${row.translator?.email || ""}
+      ${row.translator_name || ""}
     `.toLowerCase();
 
     return text.includes(search);
@@ -305,9 +280,7 @@ function renderRequests() {
 }
 
 function buildRow(row) {
-  const translatorName = row.translator
-    ? row.translator.full_name || row.translator.email
-    : "Not Assigned";
+  const translatorName = row.translator_name || "Not Assigned";
 
   return `
     <tr>
@@ -345,48 +318,36 @@ function actionButtons(row) {
     return adminActions(row);
   }
 
-  if (currentProfile.role === "translator" && row.translator_id === currentUser.id) {
-    return translatorActions(row);
-  }
-
   return "";
 }
 
 function adminActions(row) {
-  const translatorOptions = translators.map(translator => {
-    const selected = row.translator_id === translator.id ? "selected" : "";
-    return `
-      <option value="${translator.id}" ${selected}>
-        ${translator.full_name || translator.email}
-      </option>
-    `;
-  }).join("");
-
   if (row.status !== "Pending Approval") {
     return `
       <button onclick="toggleEdit(${row.id})">Edit</button>
 
       <div id="edit-${row.id}" class="action-box" style="display:none;">
-        ${adminActionControls(row, translatorOptions)}
+        ${adminActionControls(row)}
       </div>
     `;
   }
 
   return `
     <div class="action-box">
-      ${adminActionControls(row, translatorOptions)}
+      ${adminActionControls(row)}
     </div>
   `;
 }
 
-function adminActionControls(row, translatorOptions) {
+function adminActionControls(row) {
   return `
     <textarea id="adminNotes-${row.id}" placeholder="Admin notes">${row.admin_notes || ""}</textarea>
 
-    <select id="translator-${row.id}">
-      <option value="">Choose Translator Later</option>
-      ${translatorOptions}
-    </select>
+    <input 
+      id="translator-${row.id}" 
+      placeholder="Translator name"
+      value="${row.translator_name || ""}"
+    >
 
     <button class="approve" onclick="approveWaiting(${row.id})">
       Approve / Wait
@@ -416,22 +377,6 @@ function toggleEdit(id) {
       : "none";
 }
 
-function translatorActions(row) {
-  return `
-    <div class="action-box">
-      <textarea id="afterNotes-${row.id}" placeholder="After notes">${row.after_notes || ""}</textarea>
-
-      <button onclick="saveTranslatorNotes(${row.id})">
-        Save Notes
-      </button>
-
-      <button class="complete" onclick="translatorComplete(${row.id})">
-        Mark Complete
-      </button>
-    </div>
-  `;
-}
-
 /* ===========================
    ADMIN UPDATES
 =========================== */
@@ -457,11 +402,11 @@ async function approveWaiting(id) {
 }
 
 async function assignTranslator(id) {
-  const translatorId = document.getElementById(`translator-${id}`).value;
+  const translatorName = document.getElementById(`translator-${id}`).value.trim();
   const adminNotes = document.getElementById(`adminNotes-${id}`).value.trim();
 
-  if (!translatorId) {
-    alert("Please choose a translator.");
+  if (!translatorName) {
+    alert("Please enter a translator name.");
     return;
   }
 
@@ -469,7 +414,7 @@ async function assignTranslator(id) {
     .from("translation_requests")
     .update({
       status: "Assigned",
-      translator_id: translatorId,
+      translator_name: translatorName,
       admin_notes: adminNotes,
       assigned_at: new Date().toISOString()
     })
@@ -503,55 +448,20 @@ async function rejectRequest(id) {
 }
 
 async function completeRequest(id) {
-  const { error } = await supabaseClient
-    .from("translation_requests")
-    .update({
-      status: "Completed",
-      completed_at: new Date().toISOString()
-    })
-    .eq("id", id);
+  const adminNotes = document.getElementById(`adminNotes-${id}`)?.value.trim() || "";
+  const translatorName = document.getElementById(`translator-${id}`)?.value.trim() || "";
 
-  if (error) {
-    alert(error.message);
-    return;
-  }
+  const updateData = {
+    status: "Completed",
+    completed_at: new Date().toISOString()
+  };
 
-  await loadRequests();
-}
-
-/* ===========================
-   TRANSLATOR UPDATES
-=========================== */
-
-async function saveTranslatorNotes(id) {
-  const afterNotes = document.getElementById(`afterNotes-${id}`).value.trim();
+  if (adminNotes) updateData.admin_notes = adminNotes;
+  if (translatorName) updateData.translator_name = translatorName;
 
   const { error } = await supabaseClient
     .from("translation_requests")
-    .update({
-      after_notes: afterNotes
-    })
-    .eq("id", id);
-
-  if (error) {
-    alert(error.message);
-    return;
-  }
-
-  alert("Notes saved.");
-  await loadRequests();
-}
-
-async function translatorComplete(id) {
-  const afterNotes = document.getElementById(`afterNotes-${id}`).value.trim();
-
-  const { error } = await supabaseClient
-    .from("translation_requests")
-    .update({
-      after_notes: afterNotes,
-      status: "Completed",
-      completed_at: new Date().toISOString()
-    })
+    .update(updateData)
     .eq("id", id);
 
   if (error) {
